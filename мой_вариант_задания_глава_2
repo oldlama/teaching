@@ -1,0 +1,50 @@
+def symbol_count(s):
+    symbols = []
+    for item in s:
+        if item not in symbols:
+            symbols.append(item)
+    for item in symbols:
+        print(item, '-', s.count(item))
+
+def split(s):
+    splits = [',', '!', '?', '.', ':']
+    for _ in splits:
+        s = s.replace(_,' ')
+    _words = s.split(' ')
+    for item in _words:
+        if item != '':
+            print(item)
+
+if __name__ == "__main__":
+    _bot_start = False
+    while True:
+        if _bot_start == False:
+            print("Вас приветствует тестовый бот, чтобы начать работу введите \"Привет!\"")
+            a = input()
+            if a == 'Привет!':
+                _bot_start = True
+        if _bot_start == True:
+            print("Вот что я могу: \nНАОРАТЬ\nПодсчитать символы\nЗаменить\nСписок слов\nВыход")
+            print("Введите требуемое действие или вызовите оператора:")
+            b = input().lower()
+            op_index = b.find('оператор')
+            if op_index > -1:
+                print("Зову оператора!")
+                break
+            if b == 'наорать':
+                _s = input("Введите строку:\n").upper()
+                print(_s)
+            if b == 'подсчитать символы':
+                _s = input("Введите строку:\n")
+                symbol_count(_s)
+            if b == 'заменить':
+                _s = input("Введите строку:\n")
+                s1 = input("Введите символ который хотите заменить:\n")
+                s2 = input("Введите символ на который хотите заменить:\n")
+                print(_s.replace(s1,s2))
+            if b == 'список слов':
+                _s = input("Введите строку:\n")
+                split(_s)
+            if b == 'выход':
+                break
+    pass
