@@ -24,7 +24,7 @@ from random import randint, choice
 
 
 def sort_condition(x):
-    return x[1] == 'done', x[1] == 'in_work', x[1] == 'backlog'
+    return x[1] == 'done', x[1] == 'in_work', x[1] == 'backlog'  # эксперимент был, пока не понимаю почему вышло верно именно в этом порядке
 
 
 statuses = ('backlog', 'in_work', 'done')
