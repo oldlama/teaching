@@ -14,11 +14,10 @@
 # from random import randint
 #
 # nums_from_0_to_20 = [randint(0, 20) for _ in range(1000)]
-# a, b = lambda x: x % 3 == 0, lambda x: x % 3 != 0
 #
 # print(set(sorted(nums_from_0_to_20)))
 # print(set(sorted(nums_from_0_to_20, reverse=True)))
-# print(list(set(filter(a, nums_from_0_to_20))) + list(set(filter(b, nums_from_0_to_20))))
+# print(sorted(set(nums_from_0_to_20), key=lambda x: x % 3))
 
 #5
 # from random import randint, choice
