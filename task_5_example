@@ -1,0 +1,52 @@
+import random
+
+def z1():
+    numbers = [random.randint(0,20) for n in range(50)]
+    print(numbers)
+    s = set(numbers)
+    print(s)
+    print(sorted(s,reverse=True))
+    print(sorted(s, key=f))
+
+
+def f(num):
+    if num % 3 == 0:
+        return 0
+    else:
+        return 1
+
+
+def status():
+    return list(tasks_s.keys())[random.randint(0,2)]
+
+tasks_s = {
+    'backlog' : 0,
+    'in_work' : 1,
+    'done': 2
+}
+
+def z2():
+    tasks = [[random.randint(0,10000), status()] for n in range(10)]
+    print(tasks)
+
+    sorted_ = sorted(tasks, key = lambda x: tasks_s[x[1]])
+    print(sorted_)
+
+
+if __name__ == "__main__":
+    z1()
+    z2()
+    pass
+
+
+# list1 = [1,2,4,5]
+# list2 = ['a','b,','c','d']
+# list3 = ['q','e,','r','w']
+# listf = zip(list1,list2, list3)
+# print(list(listf))
+# 
+# tasks_id = [1,2,3]
+# tasks_names = ['homework', 'fix_bug', 'new_feature']
+# fin_dict = dict(list(zip(tasks_id, tasks_names)))
+# print(fin_dict)
+# print(fin_dict[1])
