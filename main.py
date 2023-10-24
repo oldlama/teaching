@@ -1,4 +1,4 @@
-from fncs_btc import *
+from fncs import *
 
 
 if __name__ == '__main__':
