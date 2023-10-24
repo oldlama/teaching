@@ -21,7 +21,7 @@ def get_all_symbols_from_exchange_information():
     return all_symbols_lst
 
 
-def get_rolling_window_price_change_statistics(symbol='ETHBTC', duration='7d'):
+def get_rolling_window_price_change_statistics(symbol='BTCUSDT', duration='7d'):
 
     base_endpoint = 'https://data-api.binance.vision'
 

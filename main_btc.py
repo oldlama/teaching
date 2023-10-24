@@ -2,9 +2,14 @@ from fncs_btc import *
 
 
 if __name__ == '__main__':
-    print_btc_price()
-    print_tops3_symbol_change_price()
-    print_std_deviations()
+
+    btc_price = get_btc_price()
+    print(f'Текущий курс Bitcoin: {float(btc_price):.4f} $')
+
+    top3 = get_top3_symbol_growth_and_decline()
+
+    print_tops3_symbol_change_price(top3)
+    print_std_deviations(top3)
 
 
 

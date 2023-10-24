@@ -7,7 +7,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 
-def print_btc_price():
+def get_btc_price():
 
     base_endpoint = 'https://api4.binance.com'  # 'https://api.binance.com' 'https://data-api.binance.vision'
 
@@ -15,18 +15,13 @@ def print_btc_price():
     symbol_price_ticker_parameter = {'symbol': 'BTCUSDT'}
     symbol_price_ticker_response = requests.get(symbol_price_ticker_endpoint, params=symbol_price_ticker_parameter)
 
-    if symbol_price_ticker_response.status_code == 200:
+    btc_price = symbol_price_ticker_response.json()['price']
 
-        btc_price = symbol_price_ticker_response.json()['price']
-        print(f'Текущий курс Bitcoin: {float(btc_price):.4f} $')
-
-    else:
-        print(f'Error {symbol_price_ticker_response.status_code} with symbol_price_ticker_response')
+    return btc_price
 
 
-def print_tops3_symbol_change_price():
+def print_tops3_symbol_change_price(top3):
 
-    top3 = get_top3_symbol_growth_and_decline()
     top3_symbol_growth, top3_symbol_decline = top3['growth'], top3['decline']
 
     df_growth = pd.DataFrame.from_dict(top3_symbol_growth, orient='index', columns=['прирост, %'])
@@ -54,9 +49,8 @@ def get_top3_symbol_growth_and_decline():
         return symbol_growth_and_decline
 
 
-def print_std_deviations():
+def print_std_deviations(top3):
 
-    top3 = get_top3_symbol_growth_and_decline()
     top1_symbol_growth, top1_symbol_decline = list(top3['growth'])[0], list(top3['decline'])[0]
 
     std_month_symbol_growth = percent_std_deviation(top1_symbol_growth, 'Open price', '1 month')
