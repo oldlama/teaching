@@ -1,7 +1,6 @@
 # docs: https://binance-docs.github.io/apidocs/voptions/en/#general-info
 
 import requests
-import json
 import pandas as pd
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -15,9 +14,64 @@ def get_btc_price():
     symbol_price_ticker_parameter = {'symbol': 'BTCUSDT'}
     symbol_price_ticker_response = requests.get(symbol_price_ticker_endpoint, params=symbol_price_ticker_parameter)
 
-    btc_price = symbol_price_ticker_response.json()['price']
+    btc_price = None
+
+    if symbol_price_ticker_response.status_code == 200:
+        btc_price = symbol_price_ticker_response.json()['price']
+    else:
+        print(f'Error {symbol_price_ticker_response.status_code} with exchange_information_response')
 
     return btc_price
+
+
+def symbol_price_change_percent():
+
+    symbol_price_change_percent_dict = {}
+    all_symbols = get_all_symbols_from_exchange_information()
+
+    for symbol in all_symbols:
+        price_change_percent = get_rolling_window_price_change_statistics(symbol)
+        symbol_price_change_percent_dict.setdefault(symbol, price_change_percent)
+
+    return symbol_price_change_percent_dict
+
+
+def get_all_symbols_from_exchange_information(quote_asset='USDT'):
+
+    base_endpoint = 'https://data-api.binance.vision'  # 'https://api4.binance.com' 'https://api.binance.com' 'https://data-api.binance.vision'
+
+    exchange_information_endpoint = base_endpoint + '/api/v3/exchangeInfo'
+    exchange_information_response = requests.get(exchange_information_endpoint)
+
+    all_symbols_lst = []
+
+    if exchange_information_response.status_code == 200:
+        for info in exchange_information_response.json()['symbols']:
+            if info['symbol'].endswith(quote_asset):
+                all_symbols_lst.append(info['symbol'])
+    else:
+        print(f'Error {exchange_information_response.status_code} with exchange_information_response')
+
+    return all_symbols_lst
+
+
+def get_rolling_window_price_change_statistics(symbol='BTCUSDT', duration='7d'):
+
+    base_endpoint = 'https://data-api.binance.vision'
+
+    statistics_endpoint = base_endpoint + '/api/v3/ticker'
+
+    statistics_parameters = {'symbol': symbol, 'windowSize': duration}
+    statistics_response = requests.get(statistics_endpoint, params=statistics_parameters)
+
+    price_change_percent = None
+
+    if statistics_response.status_code == 200:
+        price_change_percent = statistics_response.json()['priceChangePercent']
+    else:
+        print(f'Error {statistics_response.status_code} with statistics_response')
+
+    return price_change_percent
 
 
 def print_tops3_symbol_change_price(top3):
@@ -32,21 +86,19 @@ def print_tops3_symbol_change_price(top3):
     print(df_decline)
 
 
-def get_top3_symbol_growth_and_decline():
+def get_top3_symbol_growth_and_decline(data):
 
-    with open('symbol_price_change_percent.json') as file:
-        data = json.load(file)
-        symbol_price_change_percent_lst = sorted(data.items(), key=lambda item: float(item[1]))
+    symbol_price_change_percent_lst = sorted(data.items(), key=lambda item: float(item[1]))
 
-        top3_symbol_decline_dict = {key: value for key, value in symbol_price_change_percent_lst[:3]}
-        top3_symbol_growth_dict = {key: value for key, value in symbol_price_change_percent_lst[:-4:-1]}
+    top3_symbol_decline_dict = {key: value for key, value in symbol_price_change_percent_lst[:3]}
+    top3_symbol_growth_dict = {key: value for key, value in symbol_price_change_percent_lst[:-4:-1]}
 
-        symbol_growth_and_decline = {
-            'growth': top3_symbol_growth_dict,
-            'decline': top3_symbol_decline_dict,
-        }
+    symbol_growth_and_decline = {
+        'growth': top3_symbol_growth_dict,
+        'decline': top3_symbol_decline_dict,
+    }
 
-        return symbol_growth_and_decline
+    return symbol_growth_and_decline
 
 
 def print_std_deviations(top3):
