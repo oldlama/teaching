@@ -2,8 +2,25 @@
 
 import requests
 import pandas as pd
+import numpy as np
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from exceptions import *
+
+
+def is_correct_response(response):
+
+    flag = False
+
+    try:
+        if response.status_code != 200:
+            raise GetRespStatusBut200Error()
+    except GetRespStatusBut200Error:
+        print(f'"{response}" status code other than 200.')
+    else:
+        flag = True
+
+    return flag
 
 
 def get_btc_price():
@@ -16,24 +33,42 @@ def get_btc_price():
 
     btc_price = None
 
-    if symbol_price_ticker_response.status_code == 200:
+    if is_correct_response(symbol_price_ticker_response):
         btc_price = symbol_price_ticker_response.json()['price']
-    else:
-        print(f'Error {symbol_price_ticker_response.status_code} with exchange_information_response')
 
     return btc_price
 
 
-def symbol_price_change_percent():
+def symbol_price_change_percent(period, run_program_variant):
 
     symbol_price_change_percent_dict = {}
     all_symbols = get_all_symbols_from_exchange_information()
 
-    for symbol in all_symbols:
-        price_change_percent = get_rolling_window_price_change_statistics(symbol)
+    symbols = {
+        'demo': all_symbols[:10],
+        'work': all_symbols
+    }
+
+    for symbol in symbols[run_program_variant]:
+        price_change_percent = get_price_chandge_percent(symbol, period)
         symbol_price_change_percent_dict.setdefault(symbol, price_change_percent)
 
     return symbol_price_change_percent_dict
+
+
+def get_price_chandge_percent(symbol, period='1 week'):
+
+    prices_data = get_prices_data(symbol)
+
+    old_open_price = {
+        '1 week': prices_data[-8],
+        '1 month': prices_data[0]
+    }
+
+    new_open_price = prices_data[-1]
+    difference = ((new_open_price - old_open_price[period]) / new_open_price) * 100
+
+    return round(difference, 2)
 
 
 def get_all_symbols_from_exchange_information(quote_asset='USDT'):
@@ -45,33 +80,12 @@ def get_all_symbols_from_exchange_information(quote_asset='USDT'):
 
     all_symbols_lst = []
 
-    if exchange_information_response.status_code == 200:
+    if is_correct_response(exchange_information_response):
         for info in exchange_information_response.json()['symbols']:
             if info['symbol'].endswith(quote_asset):
                 all_symbols_lst.append(info['symbol'])
-    else:
-        print(f'Error {exchange_information_response.status_code} with exchange_information_response')
 
     return all_symbols_lst
-
-
-def get_rolling_window_price_change_statistics(symbol='BTCUSDT', duration='7d'):
-
-    base_endpoint = 'https://data-api.binance.vision'
-
-    statistics_endpoint = base_endpoint + '/api/v3/ticker'
-
-    statistics_parameters = {'symbol': symbol, 'windowSize': duration}
-    statistics_response = requests.get(statistics_endpoint, params=statistics_parameters)
-
-    price_change_percent = None
-
-    if statistics_response.status_code == 200:
-        price_change_percent = statistics_response.json()['priceChangePercent']
-    else:
-        print(f'Error {statistics_response.status_code} with statistics_response')
-
-    return price_change_percent
 
 
 def print_tops3_symbol_change_price(top3):
@@ -105,11 +119,11 @@ def print_std_deviations(top3):
 
     top1_symbol_growth, top1_symbol_decline = list(top3['growth'])[0], list(top3['decline'])[0]
 
-    std_month_symbol_growth = percent_std_deviation(top1_symbol_growth, 'Open price', '1 month')
-    std_week_symbol_growth = percent_std_deviation(top1_symbol_growth, 'Open price', '1 week')
+    std_month_symbol_growth = percent_std_deviation(top1_symbol_growth, '1 month')
+    std_week_symbol_growth = percent_std_deviation(top1_symbol_growth, '1 week')
 
-    std_month_symbol_decline = percent_std_deviation(top1_symbol_decline, 'Open price', '1 month')
-    std_week_symbol_decline = percent_std_deviation(top1_symbol_decline, 'Open price', '1 week')
+    std_month_symbol_decline = percent_std_deviation(top1_symbol_decline, '1 month')
+    std_week_symbol_decline = percent_std_deviation(top1_symbol_decline, '1 week')
 
     std_dev_data = {
         top1_symbol_growth: [std_week_symbol_growth, std_month_symbol_growth],
@@ -122,45 +136,73 @@ def print_std_deviations(top3):
     print(pd.DataFrame(std_dev_data, index=row_indices))
 
 
-def percent_std_deviation(symbol, feature, period):
+def percent_std_deviation(symbol, period):
 
-    data = get_matrix_candlestick_data(symbol, period)
+    prices_data = get_prices_data(symbol)
 
-    return data[feature].std() * 100
-
-
-def get_matrix_candlestick_data(symbol, period):
-
-    base_endpoint = 'https://data-api.binance.vision'
-    candlestick_data_endpoint = base_endpoint + '/api/v3/klines'
-
-    endTime = get_server_timestamp()
-
-    startTime = get_start_timestamp_for_server(endTime, how_many_time_ago=period)
-
-    interval = '1d'
-    limit = delta_days(end_timestamp=endTime/1000, start_timestamp=startTime/1000) + 1
-
-    candlestick_data_parameters = {
-        'symbol': symbol,
-        'interval': interval,
-        'limit': limit,
-        'endTime': endTime,
-        'startTime': startTime,
+    data = {
+        '1 week': prices_data[-8:],
+        '1 month': prices_data
     }
 
-    candlestick_data_responce = requests.get(candlestick_data_endpoint, params=candlestick_data_parameters)
+    return np.std(data[period]) * 100
 
-    columns = ['Kline open time', 'Open price', 'High price', 'Low price', 'Close price', 'Volume', 'Kline Close time', 'Quote asset volume', 'Number of trades', 'Taker buy base asset volume', 'Taker buy quote asset volume', 'Unused field, ignore']
-    matrix_candlestick_data = pd.DataFrame(candlestick_data_responce.json(), columns=columns)
 
-    dt_kline_open_times_lst = [convert_time(unix_time) for unix_time in matrix_candlestick_data['Kline open time'].values]
-    matrix_candlestick_data['Kline open time'] = dt_kline_open_times_lst
+def get_prices_data(symbol='BTCUSDT'):
 
-    float_open_price_lst = [custom_round(float(price)) for price in matrix_candlestick_data['Open price'].values]
-    matrix_candlestick_data['Open price'] = float_open_price_lst
+    matrix_kline_data = get_matrix_kline_data(symbol)
 
-    return matrix_candlestick_data
+    prices_data = [custom_round(float(price)) for price in matrix_kline_data['Open price']]
+
+    return prices_data
+
+
+def get_matrix_kline_data(symbol):
+
+    kline_data_json = get_klines(symbol)
+    matrix_kline_data = None
+
+    if kline_data_json:
+        columns = ['Kline open time', 'Open price', 'High price', 'Low price', 'Close price', 'Volume', 'Kline Close time', 'Quote asset volume', 'Number of trades', 'Taker buy base asset volume', 'Taker buy quote asset volume', 'Unused field, ignore']
+        matrix_kline_data = pd.DataFrame(kline_data_json, columns=columns)
+
+        dt_kline_open_times_lst = [convert_time(unix_time) for unix_time in matrix_kline_data['Kline open time'].values]
+        matrix_kline_data['Kline open time'] = dt_kline_open_times_lst
+
+        float_open_price_lst = [custom_round(float(price)) for price in matrix_kline_data['Open price'].values]
+        matrix_kline_data['Open price'] = float_open_price_lst
+
+    return matrix_kline_data
+
+
+def get_klines(symbol='BTCUSDT'):
+
+    base_endpoint = 'https://data-api.binance.vision'
+    kline_data_endpoint = base_endpoint + '/api/v3/klines'
+
+    kline_data_parameters = {
+        'symbol': symbol,
+        'interval': '1d',
+        'limit': get_limit_as_days_month(),
+    }
+
+    kline_data_responce = requests.get(kline_data_endpoint, params=kline_data_parameters)
+
+    kline_data = None
+
+    if is_correct_response(kline_data_responce):
+        kline_data = kline_data_responce.json()
+
+    return kline_data
+
+def get_limit_as_days_month():
+
+    endTime = get_server_timestamp()
+    startTime = get_start_timestamp_for_server(endTime)
+
+    limit = delta_days(end_timestamp=endTime/1000, start_timestamp=startTime/1000) + 1
+
+    return limit
 
 
 def get_server_timestamp():
@@ -172,26 +214,21 @@ def get_server_timestamp():
     return server_time_responce.json()['serverTime']  # текущая временная метка прямо сейчас в UTC, тип int (мкс - последние три цифры)
 
 
-def get_start_timestamp_for_server(end_timestamp_for_server, how_many_time_ago):
+def get_start_timestamp_for_server(end_timestamp_for_server):
 
     utc_timestamp = end_timestamp_for_server / 1000
-    startTime_timestamp = some_time_ago_utc_timestamp(utc_timestamp, how_many_time_ago)
+    startTime_timestamp = month_ago_utc_timestamp(utc_timestamp)
 
     return int(startTime_timestamp * 1000)  # временная метка ровно месяц назад в UTC для сервера
 
 
-def some_time_ago_utc_timestamp(utc_timestamp, how_many_time_ago):
+def month_ago_utc_timestamp(utc_timestamp):
 
     dt = datetime.utcfromtimestamp(utc_timestamp)
 
-    delta = {
-        '1 month': relativedelta(months=1),
-        '1 week': relativedelta(weeks=1),
-    }
+    datetime_month_time_ago = dt - relativedelta(months=1)
 
-    datetime_some_time_ago = dt - delta[how_many_time_ago]
-
-    return datetime_some_time_ago.timestamp()
+    return datetime_month_time_ago.timestamp()
 
 
 def delta_days(start_timestamp, end_timestamp):
