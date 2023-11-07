@@ -8,21 +8,6 @@ from dateutil.relativedelta import relativedelta
 from exceptions import *
 
 
-def is_correct_response(response):
-
-    flag = False
-
-    try:
-        if response.status_code != 200:
-            raise GetRespStatusBut200Error()
-    except GetRespStatusBut200Error:
-        print(f'"{response}" status code other than 200.')
-    else:
-        flag = True
-
-    return flag
-
-
 def get_btc_price():
 
     base_endpoint = 'https://api4.binance.com'  # 'https://api.binance.com' 'https://data-api.binance.vision'
@@ -37,6 +22,21 @@ def get_btc_price():
         btc_price = symbol_price_ticker_response.json()['price']
 
     return btc_price
+
+
+def is_correct_response(response):
+
+    flag = False
+
+    try:
+        if response.status_code != 200:
+            raise GetRespStatusBut200Error()
+    except GetRespStatusBut200Error:
+        print(f'"{response}" status code other than 200.')
+    else:
+        flag = True
+
+    return flag
 
 
 def symbol_price_change_percent(period, run_program_variant):
@@ -56,21 +56,6 @@ def symbol_price_change_percent(period, run_program_variant):
     return symbol_price_change_percent_dict
 
 
-def get_price_chandge_percent(symbol, period='1 week'):
-
-    prices_data = get_prices_data(symbol)
-
-    old_open_price = {
-        '1 week': prices_data[-8],
-        '1 month': prices_data[0]
-    }
-
-    new_open_price = prices_data[-1]
-    difference = ((new_open_price - old_open_price[period]) / new_open_price) * 100
-
-    return round(difference, 2)
-
-
 def get_all_symbols_from_exchange_information(quote_asset='USDT'):
 
     base_endpoint = 'https://data-api.binance.vision'  # 'https://api4.binance.com' 'https://api.binance.com' 'https://data-api.binance.vision'
@@ -88,64 +73,25 @@ def get_all_symbols_from_exchange_information(quote_asset='USDT'):
     return all_symbols_lst
 
 
-def print_tops3_symbol_change_price(top3):
-
-    top3_symbol_growth, top3_symbol_decline = top3['growth'], top3['decline']
-
-    df_growth = pd.DataFrame.from_dict(top3_symbol_growth, orient='index', columns=['прирост, %'])
-    df_decline = pd.DataFrame.from_dict(top3_symbol_decline, orient='index', columns=['упадок, %'])
-
-    print('Топ3 по наибольшему изменению стоимости в процентах за прошедшую неделю:')
-    print(df_growth)
-    print(df_decline)
-
-
-def get_top3_symbol_growth_and_decline(data):
-
-    symbol_price_change_percent_lst = sorted(data.items(), key=lambda item: float(item[1]))
-
-    top3_symbol_decline_dict = {key: value for key, value in symbol_price_change_percent_lst[:3]}
-    top3_symbol_growth_dict = {key: value for key, value in symbol_price_change_percent_lst[:-4:-1]}
-
-    symbol_growth_and_decline = {
-        'growth': top3_symbol_growth_dict,
-        'decline': top3_symbol_decline_dict,
-    }
-
-    return symbol_growth_and_decline
-
-
-def print_std_deviations(top3):
-
-    top1_symbol_growth, top1_symbol_decline = list(top3['growth'])[0], list(top3['decline'])[0]
-
-    std_month_symbol_growth = percent_std_deviation(top1_symbol_growth, '1 month')
-    std_week_symbol_growth = percent_std_deviation(top1_symbol_growth, '1 week')
-
-    std_month_symbol_decline = percent_std_deviation(top1_symbol_decline, '1 month')
-    std_week_symbol_decline = percent_std_deviation(top1_symbol_decline, '1 week')
-
-    std_dev_data = {
-        top1_symbol_growth: [std_week_symbol_growth, std_month_symbol_growth],
-        top1_symbol_decline: [std_week_symbol_decline, std_month_symbol_decline],
-    }
-
-    row_indices = ['За неделю', 'За месяц']
-
-    print('Сравнение стандартных отклонений по топ1:')
-    print(pd.DataFrame(std_dev_data, index=row_indices))
-
-
-def percent_std_deviation(symbol, period):
+def get_price_chandge_percent(symbol, period='1 week'):
 
     prices_data = get_prices_data(symbol)
 
-    data = {
-        '1 week': prices_data[-8:],
-        '1 month': prices_data
+    old_open_price = {
+        '1 week': prices_data[-8],
+        '1 month': prices_data[0]
     }
 
-    return np.std(data[period]) * 100
+    new_open_price = prices_data[-1]
+
+    if new_open_price == old_open_price[period]:
+        percent_difference = 0
+    elif old_open_price[period] != 0:
+        percent_difference = ((new_open_price / old_open_price[period]) - 1) * 100
+    else:
+        percent_difference = 100
+
+    return round(percent_difference, 2)
 
 
 def get_prices_data(symbol='BTCUSDT'):
@@ -195,6 +141,7 @@ def get_klines(symbol='BTCUSDT'):
 
     return kline_data
 
+
 def get_limit_as_days_month():
 
     endTime = get_server_timestamp()
@@ -222,6 +169,14 @@ def get_start_timestamp_for_server(end_timestamp_for_server):
     return int(startTime_timestamp * 1000)  # временная метка ровно месяц назад в UTC для сервера
 
 
+def delta_days(start_timestamp, end_timestamp):
+
+    end_datetime = datetime.utcfromtimestamp(end_timestamp)
+    start_datetime = datetime.fromtimestamp(start_timestamp)
+
+    return (end_datetime - start_datetime).days
+
+
 def month_ago_utc_timestamp(utc_timestamp):
 
     dt = datetime.utcfromtimestamp(utc_timestamp)
@@ -229,14 +184,6 @@ def month_ago_utc_timestamp(utc_timestamp):
     datetime_month_time_ago = dt - relativedelta(months=1)
 
     return datetime_month_time_ago.timestamp()
-
-
-def delta_days(start_timestamp, end_timestamp):
-
-    end_datetime = datetime.utcfromtimestamp(end_timestamp)
-    start_datetime = datetime.fromtimestamp(start_timestamp)
-
-    return (end_datetime - start_datetime).days
 
 
 def convert_time(unix_time):
@@ -260,3 +207,61 @@ def custom_round(number):
     return round(number, ndigits[True])
 
 
+def get_top3_symbol_growth_and_decline(data):
+
+    symbol_price_change_percent_lst = sorted(data.items(), key=lambda item: float(item[1]))
+
+    top3_symbol_decline_dict = {key: value for key, value in symbol_price_change_percent_lst[:3]}
+    top3_symbol_growth_dict = {key: value for key, value in symbol_price_change_percent_lst[:-4:-1]}
+
+    symbol_growth_and_decline = {
+        'growth': top3_symbol_growth_dict,
+        'decline': top3_symbol_decline_dict,
+    }
+
+    return symbol_growth_and_decline
+
+
+def print_tops3_symbol_change_price(top3):
+
+    top3_symbol_growth, top3_symbol_decline = top3['growth'], top3['decline']
+
+    df_growth = pd.DataFrame.from_dict(top3_symbol_growth, orient='index', columns=['прирост, %'])
+    df_decline = pd.DataFrame.from_dict(top3_symbol_decline, orient='index', columns=['упадок, %'])
+
+    print('Топ3 по наибольшему изменению стоимости в процентах за прошедшую неделю:')
+    print(df_growth)
+    print(df_decline)
+
+
+def print_std_deviations(top3):
+
+    top1_symbol_growth, top1_symbol_decline = list(top3['growth'])[0], list(top3['decline'])[0]
+
+    std_month_symbol_growth = percent_std_deviation(top1_symbol_growth, '1 month')
+    std_week_symbol_growth = percent_std_deviation(top1_symbol_growth, '1 week')
+
+    std_month_symbol_decline = percent_std_deviation(top1_symbol_decline, '1 month')
+    std_week_symbol_decline = percent_std_deviation(top1_symbol_decline, '1 week')
+
+    std_dev_data = {
+        top1_symbol_growth: [std_week_symbol_growth, std_month_symbol_growth],
+        top1_symbol_decline: [std_week_symbol_decline, std_month_symbol_decline],
+    }
+
+    row_indices = ['За неделю', 'За месяц']
+
+    print('Сравнение стандартных отклонений по топ1:')
+    print(pd.DataFrame(std_dev_data, index=row_indices))
+
+
+def percent_std_deviation(symbol, period):
+
+    prices_data = get_prices_data(symbol)
+
+    data = {
+        '1 week': prices_data[-8:],
+        '1 month': prices_data
+    }
+
+    return np.std(data[period]) * 100
