@@ -93,7 +93,9 @@ def get_price_chandge_percent_for_week(old_open_price, new_open_price):
     if new_open_price == old_open_price:
         percent_difference = 0
     elif float(old_open_price) != 0.0:
-        percent_difference = ((float(new_open_price) / float(old_open_price)) - 1) * 100
+        #percent_difference = ((float(new_open_price) / float(old_open_price)) - 1) * 100
+        percent_difference = ((float(new_open_price) - float(old_open_price)) / float(old_open_price)) * 100
+        #print(percent_difference)
     else:
         percent_difference = 100
 
