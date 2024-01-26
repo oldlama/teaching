@@ -65,3 +65,4 @@ if __name__ == '__main__':
     print_std_deviations(tops1_symbols_std)
 
     # дополнительно можно сделать custom_request
+    #asdsadsad тут изменили
