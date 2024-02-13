@@ -4,11 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="36db952b-6f2a-4ece-bd96-4d25b7063296" name="Changes" comment="draft commit">
+    <list default="true" id="36db952b-6f2a-4ece-bd96-4d25b7063296" name="Changes" comment="задания с 02.12">
       <change afterPath="$PROJECT_DIR$/teaching/main_project_1/fncs_btc.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/teaching/main_project_1/main_btc.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/teaching/mainproject#1" beforeDir="false" afterPath="$PROJECT_DIR$/teaching/main_project_1/mainproject#1" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -26,10 +24,10 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="master" />
+        <entry key="$PROJECT_DIR$" value="mainproject#1" />
       </map>
     </option>
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/teaching" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
